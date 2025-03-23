@@ -57,9 +57,17 @@ try {
         ]);
     }
 
-    echo "<p style='color: green;'>Данные сохранены!</p>";
+    echo "<p style='color: green;'>Данные успешно сохранены!</p>";
+
+    echo "<h3>Выбранные языки:</h3>";
+    echo "<ul>";
+    foreach ($_POST['languages'] as $language) {
+        echo "<li>" . htmlspecialchars($language) . "</li>";
+    }
+    echo "</ul>";
+
 } catch (PDOException $e) {
-    die("Ошибка сохранения: " . $e->getMessage());
+    die("Ошибка при сохранении данных: " . $e->getMessage());
 }
 
 try {
