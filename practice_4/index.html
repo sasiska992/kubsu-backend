@@ -1,147 +1,72 @@
-<?php
-// Получаем сохраненные данные и ошибки из cookies
-$formData = [];
-$errors = [];
-
-if (isset($_COOKIE['form_data'])) {
-    $formData = json_decode($_COOKIE['form_data'], true);
-}
-
-if (isset($_COOKIE['form_errors'])) {
-    $errors = json_decode($_COOKIE['form_errors'], true);
-    // Удаляем ошибки после использования
-    setcookie('form_errors', '', time() - 3600, '/');
-}
-
-$success = isset($_GET['success']) ? $_GET['success'] : 0;
-?>
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Форма регистрации</title>
-    <style>
-        .error { color: red; }
-        .error-field { border: 1px solid red; }
-        .success { color: green; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="form-container">
         <h2>Форма регистрации</h2>
-        
-        <?php if ($success): ?>
-            <p class="success">Данные успешно сохранены!</p>
-        <?php endif; ?>
-        
-        <?php if (count($errors) > 0): ?>
-            <div class="errors">
-                <p>Исправьте следующие ошибки:</p>
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li class="error"><?= htmlspecialchars($error) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-        
         <form action="submit.php" method="post">
             <div class="form-group">
                 <label for="fullname">ФИО:</label>
-                <input type="text" id="fullname" name="fullname" required maxlength="150"
-                       value="<?= htmlspecialchars($formData['fullname'] ?? '') ?>"
-                       class="<?= isset($errors['fullname']) ? 'error-field' : '' ?>">
-                <?php if (isset($errors['fullname'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['fullname']) ?></span>
-                <?php endif; ?>
+                <input type="text" id="fullname" name="fullname" required maxlength="150">
             </div>
-            
             <div class="form-group">
                 <label for="phone">Телефон:</label>
-                <input type="tel" id="phone" name="phone" required
-                       value="<?= htmlspecialchars($formData['phone'] ?? '') ?>"
-                       class="<?= isset($errors['phone']) ? 'error-field' : '' ?>">
-                <?php if (isset($errors['phone'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['phone']) ?></span>
-                <?php endif; ?>
+                <input type="tel" id="phone" name="phone" required>
             </div>
-            
             <div class="form-group">
                 <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" required
-                       value="<?= htmlspecialchars($formData['email'] ?? '') ?>"
-                       class="<?= isset($errors['email']) ? 'error-field' : '' ?>">
-                <?php if (isset($errors['email'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['email']) ?></span>
-                <?php endif; ?>
+                <input type="email" id="email" name="email" required>
             </div>
-            
             <div class="form-group">
                 <label for="dob">Дата рождения:</label>
-                <input type="date" id="dob" name="dob" required
-                       value="<?= htmlspecialchars($formData['dob'] ?? '') ?>"
-                       class="<?= isset($errors['dob']) ? 'error-field' : '' ?>">
-                <?php if (isset($errors['dob'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['dob']) ?></span>
-                <?php endif; ?>
+                <input type="date" id="dob" name="dob" required>
             </div>
-            
             <div class="form-group">
                 <label>Пол:</label>
                 <div>
-                    <input type="radio" id="male" name="gender" value="male" required
-                           <?= isset($formData['gender']) && $formData['gender'] === 'male' ? 'checked' : '' ?>>
+                    <input type="radio" id="male" name="gender" value="male" required>
                     <label for="male">Мужской</label>
-                    <input type="radio" id="female" name="gender" value="female"
-                           <?= isset($formData['gender']) && $formData['gender'] === 'female' ? 'checked' : '' ?>>
+                    <input type="radio" id="female" name="gender" value="female" required>
                     <label for="female">Женский</label>
                 </div>
-                <?php if (isset($errors['gender'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['gender']) ?></span>
-                <?php endif; ?>
             </div>
-            
             <div class="form-group">
                 <label for="languages">Любимый язык программирования:</label>
-                <select id="languages" name="languages[]" multiple="multiple" required
-                        class="<?= isset($errors['languages']) ? 'error-field' : '' ?>">
-                    <?php
-                    $languages = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
-                    $selectedLanguages = $formData['languages'] ?? [];
-                    foreach ($languages as $lang) {
-                        $selected = in_array($lang, $selectedLanguages) ? 'selected' : '';
-                        echo "<option value=\"$lang\" $selected>$lang</option>";
-                    }
-                    ?>
+                <select id="languages" name="languages[]" multiple="multiple" required>
+                    <option value="Pascal">Pascal</option>
+                    <option value="C">C</option>
+                    <option value="C++">C++</option>
+                    <option value="JavaScript">JavaScript</option>
+                    <option value="PHP">PHP</option>
+                    <option value="Python">Python</option>
+                    <option value="Java">Java</option>
+                    <option value="Haskell">Haskell</option>
+                    <option value="Clojure">Clojure</option>
+                    <option value="Prolog">Prolog</option>
+                    <option value="Scala">Scala</option>
+                    <option value="Go">Go</option>
                 </select>
-                <?php if (isset($errors['languages'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['languages']) ?></span>
-                <?php endif; ?>
             </div>
-            
             <div class="form-group">
                 <label for="bio">Биография:</label>
-                <textarea id="bio" name="bio" rows="5" required
-                          class="<?= isset($errors['bio']) ? 'error-field' : '' ?>"><?= htmlspecialchars($formData['bio'] ?? '') ?></textarea>
-                <?php if (isset($errors['bio'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['bio']) ?></span>
-                <?php endif; ?>
+                <textarea id="bio" name="bio" rows="5" required></textarea>
             </div>
-            
             <div class="form-group">
-                <input type="checkbox" id="contract" name="contract" required
-                       <?= isset($formData['contract']) ? 'checked' : '' ?>>
+                <input type="checkbox" id="contract" name="contract" required>
                 <label for="contract">С контрактом ознакомлен(а)</label>
-                <?php if (isset($errors['contract'])): ?>
-                    <span class="error"><?= htmlspecialchars($errors['contract']) ?></span>
-                <?php endif; ?>
             </div>
-            
             <div class="form-group">
                 <button type="submit">Сохранить</button>
             </div>
         </form>
     </div>
 </body>
+
 </html>

@@ -11,69 +11,81 @@ try {
     die("Ошибка подключения: " . $e->getMessage());
 }
 
-// Функция для валидации данных
-function validateData(&$errors) {
-    $fields = [
-        'fullname' => [
-            'pattern' => '/^[a-zA-Zа-яА-ЯёЁ\s-]{1,150}$/u',
-            'message' => 'ФИО должно содержать только буквы, пробелы и дефисы, не более 150 символов'
-        ],
-        'phone' => [
-            'pattern' => '/^\+?\d{10,15}$/',
-            'message' => 'Телефон должен содержать от 10 до 15 цифр, может начинаться с +'
-        ],
-        'email' => [
-            'pattern' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
-            'message' => 'Введите корректный email'
-        ],
-        'dob' => [
-            'pattern' => '/^\d{4}-\d{2}-\d{2}$/',
-            'message' => 'Дата должна быть в формате ГГГГ-ММ-ДД'
-        ],
-        'bio' => [
-            'pattern' => '/^[\s\S]{1,500}$/',
-            'message' => 'Биография не должна превышать 500 символов'
-        ]
-    ];
+$errors = [];
 
-    foreach ($fields as $field => $rules) {
-        if (empty($_POST[$field])) {
-            $errors[$field] = "Поле обязательно для заполнения";
-        } elseif (!preg_match($rules['pattern'], $_POST[$field])) {
-            $errors[$field] = $rules['message'];
-        }
-    }
+// Проверка ФИО
+if (empty($_POST['fullname'])) {
+    $errors[] = "ФИО обязательно.";
+} elseif (!preg_match("/^[a-zA-Zа-яА-ЯёЁ\s-]{1,150}$/u", $_POST['fullname'])) {
+    $errors[] = "ФИО должно содержать только буквы, пробелы и дефисы, не более 150 символов.";
+}
 
-    if (empty($_POST['gender'])) {
-        $errors['gender'] = "Укажите пол";
-    }
+// Проверка телефона (пример: +7(123)456-78-90 или 81234567890)
+if (empty($_POST['phone'])) {
+    $errors[] = "Телефон обязателен.";
+} elseif (!preg_match("/^(\+?\d{1,3})?[\(\)\-\d\s]{7,20}$/", $_POST['phone'])) {
+    $errors[] = "Некорректный формат телефона.";
+}
 
-    if (empty($_POST['languages'])) {
-        $errors['languages'] = "Выберите хотя бы один язык";
-    }
+// Проверка email
+if (empty($_POST['email'])) {
+    $errors[] = "Email обязателен.";
+} elseif (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+    $errors[] = "Некорректный формат email.";
+}
 
-    if (empty($_POST['contract'])) {
-        $errors['contract'] = "Необходимо согласие с контрактом";
+// Проверка даты рождения (формат YYYY-MM-DD и возраст >= 18 лет)
+if (empty($_POST['dob'])) {
+    $errors[] = "Дата рождения обязательна.";
+} elseif (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $_POST['dob'])) {
+    $errors[] = "Некорректный формат даты рождения (требуется YYYY-MM-DD).";
+} else {
+    $dob = new DateTime($_POST['dob']);
+    $today = new DateTime();
+    $age = $today->diff($dob)->y;
+    if ($age < 18) {
+        $errors[] = "Возраст должен быть 18 лет и более.";
     }
 }
 
-$errors = [];
-validateData($errors);
+// Проверка пола
+if (empty($_POST['gender']) || !in_array($_POST['gender'], ['male', 'female', 'other'])) {
+    $errors[] = "Укажите корректный пол.";
+}
+
+// Проверка языков программирования
+if (empty($_POST['languages']) || !is_array($_POST['languages'])) {
+    $errors[] = "Выберите хотя бы один язык программирования.";
+} else {
+    foreach ($_POST['languages'] as $language) {
+        if (!preg_match("/^[a-zA-Zа-яА-ЯёЁ\s\+#]{1,50}$/u", $language)) {
+            $errors[] = "Некорректное название языка программирования.";
+            break;
+        }
+    }
+}
+
+// Проверка биографии (не обязательно, но если есть - проверяем)
+if (!empty($_POST['bio']) && !preg_match("/^[a-zA-Zа-яА-ЯёЁ0-9\s.,!?\-]{0,500}$/u", $_POST['bio'])) {
+    $errors[] = "Биография содержит недопустимые символы или слишком длинная (макс. 500 символов).";
+}
 
 if (count($errors) > 0) {
-    // Сохраняем ошибки и введенные данные в cookies
-    setcookie('form_errors', json_encode($errors), 0, '/');
-    setcookie('form_data', json_encode($_POST), 0, '/');
-    header('Location: index.php');
+    foreach ($errors as $error) {
+        echo "<p style='color: red;'>$error</p>";
+    }
     exit;
 }
 
-// Если ошибок нет, сохраняем данные в БД
+// Обработка ФИО
 $fullname = trim($_POST['fullname']);
-$nameParts = explode(' ', $fullname);
+$nameParts = preg_split('/\s+/', $fullname);
 $last_name = $nameParts[0] ?? '';
 $first_name = $nameParts[1] ?? '';
 $patronymic = $nameParts[2] ?? null;
+
+// Очистка телефона от лишних символов
+$phone = preg_replace('/[^0-9+]/', '', $_POST['phone']);
 
 try {
     $stmt = $db->prepare("INSERT INTO application (first_name, last_name, patronymic, phone, email, dob, gender, bio) 
@@ -82,7 +94,7 @@ try {
         ':first_name' => $first_name,
         ':last_name' => $last_name,
         ':patronymic' => $patronymic,
-        ':phone' => $_POST['phone'],
+        ':phone' => $phone,
         ':email' => $_POST['email'],
         ':dob' => $_POST['dob'],
         ':gender' => $_POST['gender'],
@@ -100,15 +112,39 @@ try {
         ]);
     }
 
-    // Сохраняем данные в cookies на год
-    setcookie('form_data', json_encode($_POST), time() + 60*60*24*365, '/');
-    // Удаляем ошибки, если они были
-    setcookie('form_errors', '', time() - 3600, '/');
-    
-    header('Location: index.php?success=1');
-    exit;
+    echo "<p style='color: green;'>Данные успешно сохранены!</p>";
 
 } catch (PDOException $e) {
     die("Ошибка при сохранении данных: " . $e->getMessage());
+}
+
+try {
+    $stmt = $db->query("SELECT a.id, a.first_name, a.last_name, a.patronymic, a.email, GROUP_CONCAT(l.name SEPARATOR ', ') AS languages 
+                        FROM application a 
+                        LEFT JOIN application_languages al ON a.id = al.application_id 
+                        LEFT JOIN languages l ON al.language_id = l.id 
+                        GROUP BY a.id");
+    $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (count($applications) > 0) {
+        echo "<h2>Список заявок</h2>";
+        echo "<table border='1' cellpadding='10' cellspacing='0'>";
+        echo "<tr><th>ID</th><th>Фамилия</th><th>Имя</th><th>Отчество</th><th>Email</th><th>Языки</th></tr>";
+        foreach ($applications as $app) {
+            echo "<tr>";
+            echo "<td>{$app['id']}</td>";
+            echo "<td>{$app['last_name']}</td>";
+            echo "<td>{$app['first_name']}</td>";
+            echo "<td>{$app['patronymic']}</td>";
+            echo "<td>{$app['email']}</td>";
+            echo "<td>{$app['languages']}</td>";
+            echo "</tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "<p>Заявок нет.</p>";
+    }
+} catch (PDOException $e) {
+    die("Ошибка получения данных: " . $e->getMessage());
 }
 ?>
