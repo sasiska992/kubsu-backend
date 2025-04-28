@@ -11,7 +11,6 @@ if (isset($_COOKIE['form_errors'])) {
     $errors = json_decode($_COOKIE['form_errors'], true);
     setcookie('form_errors', '', time() - 3600, '/');
 }
-
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     if (!empty($_GET['save'])) {
         $successMessage = 'Спасибо, результаты сохранены.';
