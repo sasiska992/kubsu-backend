@@ -13,61 +13,10 @@ try {
 
 $errors = [];
 
-// Проверка ФИО
 if (empty($_POST['fullname'])) {
     $errors[] = "ФИО обязательно.";
-} elseif (!preg_match("/^[a-zA-Zа-яА-ЯёЁ\s-]{1,150}$/u", $_POST['fullname'])) {
-    $errors[] = "ФИО должно содержать только буквы, пробелы и дефисы, не более 150 символов.";
-}
-
-// Проверка телефона (пример: +7(123)456-78-90 или 81234567890)
-if (empty($_POST['phone'])) {
-    $errors[] = "Телефон обязателен.";
-} elseif (!preg_match("/^(\+?\d{1,3})?[\(\)\-\d\s]{7,20}$/", $_POST['phone'])) {
-    $errors[] = "Некорректный формат телефона.";
-}
-
-// Проверка email
-if (empty($_POST['email'])) {
-    $errors[] = "Email обязателен.";
-} elseif (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
-    $errors[] = "Некорректный формат email.";
-}
-
-// Проверка даты рождения (формат YYYY-MM-DD и возраст >= 18 лет)
-if (empty($_POST['dob'])) {
-    $errors[] = "Дата рождения обязательна.";
-} elseif (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $_POST['dob'])) {
-    $errors[] = "Некорректный формат даты рождения (требуется YYYY-MM-DD).";
-} else {
-    $dob = new DateTime($_POST['dob']);
-    $today = new DateTime();
-    $age = $today->diff($dob)->y;
-    if ($age < 18) {
-        $errors[] = "Возраст должен быть 18 лет и более.";
-    }
-}
-
-// Проверка пола
-if (empty($_POST['gender']) || !in_array($_POST['gender'], ['male', 'female', 'other'])) {
-    $errors[] = "Укажите корректный пол.";
-}
-
-// Проверка языков программирования
-if (empty($_POST['languages']) || !is_array($_POST['languages'])) {
-    $errors[] = "Выберите хотя бы один язык программирования.";
-} else {
-    foreach ($_POST['languages'] as $language) {
-        if (!preg_match("/^[a-zA-Zа-яА-ЯёЁ\s\+#]{1,50}$/u", $language)) {
-            $errors[] = "Некорректное название языка программирования.";
-            break;
-        }
-    }
-}
-
-// Проверка биографии (не обязательно, но если есть - проверяем)
-if (!empty($_POST['bio']) && !preg_match("/^[a-zA-Zа-яА-ЯёЁ0-9\s.,!?\-]{0,500}$/u", $_POST['bio'])) {
-    $errors[] = "Биография содержит недопустимые символы или слишком длинная (макс. 500 символов).";
+} elseif (!preg_match("/^[a-zA-Zа-яА-Я\s]{1,150}$/u", $_POST['fullname'])) {
+    $errors[] = "ФИО должно содержать только буквы и пробелы, не более 150 символов.";
 }
 
 if (count($errors) > 0) {
@@ -77,15 +26,11 @@ if (count($errors) > 0) {
     exit;
 }
 
-// Обработка ФИО
 $fullname = trim($_POST['fullname']);
-$nameParts = preg_split('/\s+/', $fullname);
+$nameParts = explode(' ', $fullname);
 $last_name = $nameParts[0] ?? '';
 $first_name = $nameParts[1] ?? '';
 $patronymic = $nameParts[2] ?? null;
-
-// Очистка телефона от лишних символов
-$phone = preg_replace('/[^0-9+]/', '', $_POST['phone']);
 
 try {
     $stmt = $db->prepare("INSERT INTO application (first_name, last_name, patronymic, phone, email, dob, gender, bio) 
@@ -94,7 +39,7 @@ try {
         ':first_name' => $first_name,
         ':last_name' => $last_name,
         ':patronymic' => $patronymic,
-        ':phone' => $phone,
+        ':phone' => $_POST['phone'],
         ':email' => $_POST['email'],
         ':dob' => $_POST['dob'],
         ':gender' => $_POST['gender'],
@@ -144,6 +89,12 @@ try {
     } else {
         echo "<p>Заявок нет.</p>";
     }
+    // Сохраняем данные в куки на 1 год
+    setcookie('form_data', json_encode($formData), time() + 60 * 60 * 24 * 365, '/');
+            
+    // Редирект, чтобы избежать повторной отправки формы при обновлении
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
 } catch (PDOException $e) {
     die("Ошибка получения данных: " . $e->getMessage());
 }
