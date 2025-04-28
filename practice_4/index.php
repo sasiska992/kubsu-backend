@@ -111,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
   // Получение данных
   $fio = trim($_POST['full_name'] ?? '');
+  list($name, $last_name, $patronymic) = explode(" ", $fio);
   $num = trim($_POST['phone'] ?? '');
   $email = trim($_POST['email'] ?? '');
   $day = trim($_POST['birth_day'] ?? '');
@@ -209,8 +210,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Сохранение в БД
   try {
     $birth_date = sprintf("%04d-%02d-%02d", $year, $month, $day);
-    $stmt = $db->prepare("INSERT INTO application (full_name, phone, email, birth_date, gender, biography, agreement) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$fio, $num, $email, $birth_date, $gen, $biography, $agreement]);
+    $stmt = $db->prepare("INSERT INTO application (first_name, last_name, patronymic, phone, email, dob, gender, biography) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$name, $last_name, $patronymic, $num, $email, $birth_date, $gen, $biography]);
 
     $application_id = $db->lastInsertId();
     $stmt_insert = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
