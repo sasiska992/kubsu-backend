@@ -2,7 +2,6 @@
 session_start();
 header('Content-Type: text/html; charset=UTF-8');
 
-// Подключение к БД
 $user = 'u68763';
 $pass = '7680994';
 $dbname = 'u68763';
@@ -103,7 +102,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     setcookie('last_name_value', $last_name, time() + 86400 * 365);
 
-    // ... (добавьте валидацию для остальных полей)
+    if (!empty($patronymic) && strlen($patronymic) > 128) {
+        setcookie('patronymic_error', '1', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('patronymic_value', $patronymic, time() + 86400 * 365);
+
+    if (empty($phone)) {
+        setcookie('phone_error', '1', time() + 86400);
+        $errors = TRUE;
+    } elseif (!preg_match('/^\+7\d{10}$/', $phone)) {
+        setcookie('phone_error', '2', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('phone_value', $phone, time() + 86400 * 365);
+
+    if (empty($email)) {
+        setcookie('email_error', '1', time() + 86400);
+        $errors = TRUE;
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        setcookie('email_error', '2', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('email_value', $email, time() + 86400 * 365);
+
+    if (empty($dob)) {
+        setcookie('dob_error', '1', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('dob_value', $dob, time() + 86400 * 365);
+
+    if (empty($gender)) {
+        setcookie('gender_error', '1', time() + 86400);
+        $errors = TRUE;
+    } elseif (!in_array($gender, ['male', 'female'])) {
+        setcookie('gender_error', '2', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('gender_value', $gender, time() + 86400 * 365);
+
+    if (empty($bio)) {
+        setcookie('bio_error', '1', time() + 86400);
+        $errors = TRUE;
+    } elseif (strlen($bio) > 512) {
+        setcookie('bio_error', '2', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('bio_value', $bio, time() + 86400 * 365);
 
     if (empty($languages)) {
         setcookie('languages_error', '1', time() + 86400);

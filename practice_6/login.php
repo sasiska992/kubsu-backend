@@ -7,7 +7,6 @@ if (!empty($_SESSION['login'])) {
     exit();
 }
 
-// Подключение с вашими данными
 $user = 'u68763';
 $pass = '7680994';
 $dbname = 'u68763';
