@@ -20,7 +20,6 @@
             <h3>Ваши учетные данные:</h3>
             <p><strong>Логин:</strong> <?= htmlspecialchars($_SESSION['generated_login']) ?></p>
             <p><strong>Пароль:</strong> <?= htmlspecialchars($_SESSION['generated_password']) ?></p>
-            <p>Используйте их для входа в следующий раз.</p>
         </div>
         <?php 
             unset($_SESSION['generated_login']);
@@ -31,13 +30,30 @@
     <form action="index.php" method="POST" class="form-container">
         <h1 class="text-center">Форма заявки</h1>
 
-        <!-- Поля формы с классами Bootstrap -->
         <div class="form-group">
-            <label class="form-label">ФИО:</label>
-            <input type="text" name="full_name" class="form-control <?= !empty($errors['full_name']) ? 'is-invalid' : '' ?>" 
-                   value="<?= htmlspecialchars($values['full_name'] ?? '') ?>" required>
-            <?php if (!empty($messages['full_name'])): ?>
-                <div class="error-message"><?= $messages['full_name'] ?></div>
+            <label class="form-label">Имя:</label>
+            <input type="text" name="first_name" class="form-control <?= !empty($errors['first_name']) ? 'is-invalid' : '' ?>" 
+                   value="<?= htmlspecialchars($values['first_name'] ?? '') ?>" required>
+            <?php if (!empty($messages['first_name'])): ?>
+                <div class="error-message"><?= $messages['first_name'] ?></div>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Фамилия:</label>
+            <input type="text" name="last_name" class="form-control <?= !empty($errors['last_name']) ? 'is-invalid' : '' ?>" 
+                   value="<?= htmlspecialchars($values['last_name'] ?? '') ?>" required>
+            <?php if (!empty($messages['last_name'])): ?>
+                <div class="error-message"><?= $messages['last_name'] ?></div>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Отчество:</label>
+            <input type="text" name="patronymic" class="form-control <?= !empty($errors['patronymic']) ? 'is-invalid' : '' ?>" 
+                   value="<?= htmlspecialchars($values['patronymic'] ?? '') ?>">
+            <?php if (!empty($messages['patronymic'])): ?>
+                <div class="error-message"><?= $messages['patronymic'] ?></div>
             <?php endif; ?>
         </div>
 

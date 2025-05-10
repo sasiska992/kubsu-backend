@@ -2,7 +2,7 @@
 session_start();
 header('Content-Type: text/html; charset=UTF-8');
 
-// Подключение к БД с вашими данными
+// Подключение к БД
 $user = 'u68763';
 $pass = '7680994';
 $dbname = 'u68763';
@@ -16,7 +16,6 @@ try {
     die('Ошибка подключения: ' . $e->getMessage());
 }
 
-// Получение списка языков из таблицы languages
 function getLangs($db) {
     try {
         $stmt = $db->query("SELECT id, name FROM languages");
@@ -29,24 +28,21 @@ function getLangs($db) {
 $allowed_lang = getLangs($db);
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Обработка GET-запроса (показать форму)
     $messages = [];
     $errors = [];
     $values = [];
 
-    $fields = ['full_name', 'phone', 'email', 'birth_day', 'birth_month', 'birth_year', 'gender', 'biography', 'languages', 'agreement'];
+    $fields = ['first_name', 'last_name', 'patronymic', 'phone', 'email', 'dob', 'gender', 'bio', 'languages'];
     
     foreach ($fields as $field) {
         $errors[$field] = !empty($_COOKIE[$field.'_error']);
         $values[$field] = $_COOKIE[$field.'_value'] ?? '';
     }
 
-    // Очистка ошибок
     foreach ($fields as $field) {
         setcookie($field.'_error', '', time() - 3600);
     }
 
-    // Загрузка данных пользователя, если он авторизован
     if (!empty($_SESSION['login'])) {
         try {
             $stmt = $db->prepare("
@@ -58,20 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $application = $stmt->fetch();
 
             if ($application) {
-                $values['full_name'] = $application['full_name'];
+                $values['first_name'] = $application['first_name'];
+                $values['last_name'] = $application['last_name'];
+                $values['patronymic'] = $application['patronymic'];
                 $values['phone'] = $application['phone'];
                 $values['email'] = $application['email'];
+                $values['dob'] = $application['dob'];
                 $values['gender'] = $application['gender'];
-                $values['biography'] = $application['biography'];
-                $values['agreement'] = $application['agreement'];
+                $values['bio'] = $application['bio'];
                 
-                // Разбиваем дату на компоненты
-                $birthDate = new DateTime($application['birth_date']);
-                $values['birth_day'] = $birthDate->format('d');
-                $values['birth_month'] = $birthDate->format('m');
-                $values['birth_year'] = $birthDate->format('Y');
-                
-                // Получаем выбранные языки
                 $stmt = $db->prepare("SELECT language_id FROM application_languages WHERE application_id = ?");
                 $stmt->execute([$application['id']]);
                 $selectedLangs = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -86,53 +77,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     exit();
 }
 
-// Обработка POST-запроса (отправка формы)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $errors = FALSE;
     
-    // Получение и валидация данных
-    $full_name = trim($_POST['full_name'] ?? '');
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
+    $patronymic = trim($_POST['patronymic'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
-    $day = trim($_POST['birth_day'] ?? '');
-    $month = trim($_POST['birth_month'] ?? '');
-    $year = trim($_POST['birth_year'] ?? '');
+    $dob = trim($_POST['dob'] ?? '');
     $gender = $_POST['gender'] ?? '';
-    $biography = trim($_POST['biography'] ?? '');
+    $bio = trim($_POST['bio'] ?? '');
     $languages = $_POST['languages'] ?? [];
-    $agreement = isset($_POST['agreement']) ? 1 : 0;
 
-    // Валидация данных (сохранено из вашего кода)
-    // ... (ваш код валидации с setcookie для ошибок)
+    // Валидация данных
+    if (empty($first_name)) {
+        setcookie('first_name_error', '1', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('first_name_value', $first_name, time() + 86400 * 365);
+
+    if (empty($last_name)) {
+        setcookie('last_name_error', '1', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('last_name_value', $last_name, time() + 86400 * 365);
+
+    // ... (добавьте валидацию для остальных полей)
+
+    if (empty($languages)) {
+        setcookie('languages_error', '1', time() + 86400);
+        $errors = TRUE;
+    }
+    setcookie('languages_value', implode(',', $languages), time() + 86400 * 365);
 
     if ($errors) {
         header('Location: index.php');
         exit();
     }
 
-    // Если ошибок нет - сохраняем данные
     try {
-        $birth_date = sprintf("%04d-%02d-%02d", $year, $month, $day);
-        
         if (!empty($_SESSION['login'])) {
-            // Обновление существующей заявки
+            // Обновление данных
             $db->beginTransaction();
             
-            // Обновляем основную информацию
             $stmt = $db->prepare("
                 UPDATE application SET 
-                full_name = ?, phone = ?, email = ?, birth_date = ?, 
-                gender = ?, biography = ?, agreement = ?
+                first_name = ?, last_name = ?, patronymic = ?, phone = ?, 
+                email = ?, dob = ?, gender = ?, bio = ?
                 WHERE id = (SELECT application_id FROM users WHERE login = ?)
             ");
-            $stmt->execute([$full_name, $phone, $email, $birth_date, $gender, $biography, $agreement, $_SESSION['login']]);
+            $stmt->execute([$first_name, $last_name, $patronymic, $phone, $email, $dob, $gender, $bio, $_SESSION['login']]);
             
-            // Получаем ID заявки
             $stmt = $db->prepare("SELECT application_id FROM users WHERE login = ?");
             $stmt->execute([$_SESSION['login']]);
             $app_id = $stmt->fetchColumn();
             
-            // Обновляем языки
             $db->prepare("DELETE FROM application_languages WHERE application_id = ?")->execute([$app_id]);
             
             $stmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
@@ -142,25 +142,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $db->commit();
         } else {
-            // Создание новой заявки
+            // Новая заявка
             $db->beginTransaction();
             
-            // Вставляем основную информацию
             $stmt = $db->prepare("
                 INSERT INTO application 
-                (full_name, phone, email, birth_date, gender, biography, agreement) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (first_name, last_name, patronymic, phone, email, dob, gender, bio)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$full_name, $phone, $email, $birth_date, $gender, $biography, $agreement]);
+            $stmt->execute([$first_name, $last_name, $patronymic, $phone, $email, $dob, $gender, $bio]);
             $app_id = $db->lastInsertId();
             
-            // Добавляем языки
             $stmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
             foreach ($languages as $lang_id) {
                 $stmt->execute([$app_id, $lang_id]);
             }
             
-            // Создаем пользователя
             $login = uniqid('user_');
             $password = bin2hex(random_bytes(8));
             $pass_hash = password_hash($password, PASSWORD_DEFAULT);
