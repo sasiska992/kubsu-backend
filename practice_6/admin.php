@@ -27,8 +27,7 @@ if (!isset($_SERVER['PHP_AUTH_USER'])) {
 $admin_login = $_SERVER['PHP_AUTH_USER'];
 $admin_pass = $_SERVER['PHP_AUTH_PW'];
 
-// Проверка учетных данных администратора (замените на свою проверку)
-$valid_admin = ($admin_login === 'admin' && $admin_pass === 'admin123'); // Пример - замените на реальные данные
+$valid_admin = ($admin_login === 'admin' && $admin_pass === 'admin123'); 
 
 if (!$valid_admin) {
     header('WWW-Authenticate: Basic realm="Admin Panel"');
@@ -37,14 +36,12 @@ if (!$valid_admin) {
     exit();
 }
 
-// Выход из админки
 if (isset($_GET['logout'])) {
     session_destroy();
     header('Location: index.php');
     exit();
 }
 
-// Функции для работы с данными
 function getAllApplications($db) {
     $stmt = $db->query("
         SELECT a.*, u.login 
@@ -89,15 +86,12 @@ if (isset($_GET['delete'])) {
     try {
         $db->beginTransaction();
         
-        // Удаляем связи с языками
         $stmt = $db->prepare("DELETE FROM application_languages WHERE application_id = ?");
         $stmt->execute([$id]);
         
-        // Удаляем пользователя
         $stmt = $db->prepare("DELETE FROM users WHERE application_id = ?");
         $stmt->execute([$id]);
         
-        // Удаляем саму заявку
         $stmt = $db->prepare("DELETE FROM application WHERE id = ?");
         $stmt->execute([$id]);
         
@@ -127,7 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_application'])) {
     try {
         $db->beginTransaction();
         
-        // Обновляем основную информацию
         $stmt = $db->prepare("
             UPDATE application SET 
             first_name = ?, last_name = ?, patronymic = ?, phone = ?, 
@@ -136,7 +129,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_application'])) {
         ");
         $stmt->execute([$first_name, $last_name, $patronymic, $phone, $email, $dob, $gender, $bio, $id]);
         
-        // Обновляем языки
         $stmt = $db->prepare("DELETE FROM application_languages WHERE application_id = ?");
         $stmt->execute([$id]);
         
