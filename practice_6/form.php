@@ -29,6 +29,7 @@
 
     <form action="index.php" method="POST" class="form-container">
         <h1 class="text-center">Форма заявки</h1>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
 
         <div class="form-group">
             <label class="form-label">Имя:</label>

@@ -1,23 +1,26 @@
 <?php
 session_start();
 header('Content-Type: text/html; charset=UTF-8');
+header('X-Frame-Options: DENY');
 
-if (!empty($_SESSION['login'])) {
-    header('Location: index.php');
-    exit();
+require_once 'config.php';
+
+if (!isset($_SESSION['login_attempts'])) {
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['last_attempt'] = time();
 }
 
-$user = 'u68763';
-$pass = '7680994';
-$dbname = 'u68763';
+if ($_SESSION['login_attempts'] > 5 && time() - $_SESSION['last_attempt'] < 300) {
+    die('Слишком много попыток входа. Попробуйте позже.');
+}
 
 try {
-    $db = new PDO("mysql:host=localhost;dbname=$dbname", $user, $pass, [
-        PDO::ATTR_PERSISTENT => true,
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
     ]);
 } catch (PDOException $e) {
-    die('Ошибка подключения: ' . $e->getMessage());
+    die('Ошибка системы. Попробуйте позже.');
 }
 
 $messages = [];
@@ -27,20 +30,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = trim($_POST['pass'] ?? '');
 
     try {
-        $stmt = $db->prepare("SELECT id, login, password_hash FROM users WHERE login = ?");
+        $stmt = $db->prepare("SELECT id, login, password_hash FROM users WHERE login = ? LIMIT 1");
         $stmt->execute([$login]);
         $user = $stmt->fetch();
-
+        
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['login'] = $user['login'];
             $_SESSION['uid'] = $user['id'];
+            $_SESSION['login_attempts'] = 0;
+            session_regenerate_id(true);
             header('Location: index.php');
             exit();
         } else {
+            $_SESSION['login_attempts']++;
+            $_SESSION['last_attempt'] = time();
             $messages[] = 'Неверный логин или пароль';
         }
     } catch (PDOException $e) {
-        $messages[] = 'Ошибка при входе в систему';
+        $messages[] = 'Ошибка системы';
     }
 }
 ?>
